@@ -2,36 +2,16 @@ class Tree:
     def __init__(self, children):
         self.children = children
 
-    # This is like Java's toString() for human-readable output
     def __str__(self):
-        return self._print_tree(0)
-
-    # This is more like an official or unambiguous representation of the object
-    def __repr__(self):
-        return f"Tree({self.children})"
-
-    # Helper method to print tree with indentation
-    def _print_tree(self, level):
-        result = "  " * level + "Tree\n"
-        for child in self.children:
-            result += child._print_tree(level + 1)
-        return result
+        return f"Tree({', '.join(str(sub) for sub in self.children)})"
 
 class Terminal(Tree):
     def __init__(self, value):
         super().__init__([])  # Terminal node has no children
         self.value = value  # Sets the value for the terminal node
 
-    # Like Java's toString() to return a user-friendly value
     def __str__(self):
-        return f"Terminal({self.value})"
-
-    # More detailed, unambiguous representation
-    def __repr__(self):
-        return f"Terminal({self.value})"
-
-    def _print_tree(self, level):
-        return "  " * level + f"Terminal({self.value})\n"
+        return f"T({self.value})"
         
     def minmax(self, tree, maximising_player):
         
@@ -51,8 +31,24 @@ class Terminal(Tree):
                 min_ = min(self.minmax(subtree, not maximising_player), min_)
             return min_
 
+    def pruning(self, tree, maximising_player, alpha=float("-inf"), beta=float("+inf")):
+        print(str(tree))
+        if isinstance(tree, Terminal):
+            return tree.value
+
+        val, func = (float("-inf"), max) if maximising_player else (float("+inf"), min)
+        for subtree in tree.children:
+            val = func(self.pruning(subtree, not maximising_player, alpha, beta), val)
+            if maximising_player:
+                alpha = max(alpha, val)
+            else:
+                beta = min(beta, val)
+            if (maximising_player and val >= beta) or (not maximising_player and val <= alpha):
+                break
+        return val
+
     def alpha_beta_pruning(self, tree, maximizing, alpha=float("-inf"), beta=float("+inf")):
-        print(tree.__str__)
+        print(tree)
         # Base case 
         if isinstance(tree, Terminal):
             return tree.value
@@ -60,17 +56,19 @@ class Terminal(Tree):
         if maximizing:
             max_ = float("-inf")
             for subtree in tree.children:
-                max_ = max(self.alpha_beta_pruning(subtree, not maximizing, alpha, beta), max_)
+                max_ = max(self.alpha_beta_pruning(subtree, False, alpha, beta), max_)
                 alpha = max(alpha, max_)
                 if alpha >= beta:
+                    print(f"Pruning because {alpha} >= {beta}")
                     break
             return max_
         else:
             min_ = float("inf")
             for subtree in tree.children:
-                min_ = min(self.alpha_beta_pruning(subtree, not maximizing, alpha, beta), min_)
+                min_ = min(self.alpha_beta_pruning(subtree, True, alpha, beta), min_)
                 beta = min(min_, beta)
                 if alpha >= beta:
+                    print(f"Pruning because {alpha} >= {beta}")
                     break
             return min_
             
@@ -92,9 +90,12 @@ tree = Tree([
     Terminal(7),
 ])
 
+
+
 terminal = Terminal(None)
 
-result = terminal.alpha_beta_pruning(tree, True)
+result = terminal.alpha_beta_pruning(tree, False)
+# result = terminal.pruning(tree, True)
 print(result)
 
             
